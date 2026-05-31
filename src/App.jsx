@@ -523,7 +523,7 @@ export default function App() {
     const fetchFB = async () => {
       setFbLoading(true);
       try {
-        const r = await fetch(`https://graph.facebook.com/v19.0/${fbCreds.id}/insights?metric=page_impressions_unique,page_post_engagements,page_fans&period=day&access_token=${fbCreds.token}`);
+        const r = await fetch(`/api/facebook?pageId=${fbCreds.id}&token=${fbCreds.token}`);
         const json = await r.json();
         if (json.data) {
           const imp = json.data.find(m => m.name === "page_impressions_unique");
