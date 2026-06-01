@@ -475,7 +475,7 @@ const INIT = {
   eating: { calories: 1640, calGoal: 2200, protein: 88, proteinGoal: 150, water: 5, waterGoal: 8, history: [1800, 2100, 1500, 2300, 1950, 1640], meals: [] },
   lifting: { sessions: 2, sessionsGoal: 4, history: [6200, 9800, 7100, 11200, 9500, 8400], log: [] },
   sun: { minutes: 25, goal: 30, weekendGoal: 60, history: [0, 40, 15, 0, 20, 25] },
-  facebook: { reach: 328591, reachGoal: 500000, engagement: 4.2, engGoal: 8, posts: 3, postsGoal: 5, history: [280000, 310000, 295000, 315000, 320000, 328591],
+  facebook: { reach: 328591, reachGoal: 500000, pageViews: 0, newFollowers: 0, engagement: 4.2, engGoal: 8, posts: 3, postsGoal: 5, history: [280000, 310000, 295000, 315000, 320000, 328591],
     tips: ["Post between 7–9 PM — your audience is most active then", "Reels get 3x more reach than static posts", "Add a question to your caption to boost comments", "Reply to every comment in the first hour", "Bundle ad success stories into carousel posts"] },
   sales: { calls: 8, callsGoal: 15, deals: 2, dealsGoal: 5, revenue: 1400, revenueGoal: 5000, history: [800, 1200, 600, 2100, 1800, 1400],
     planArea: "", planProduct: "Print", planNotes: "",
@@ -528,28 +528,25 @@ export default function App() {
     const fetchFB = async () => {
       setFbLoading(true);
       try {
-        // Fetch insights
-        const insightsUrl = `https://graph.facebook.com/v19.0/${fbCreds.id}/insights?metric=page_impressions_unique,page_post_engagements,page_fans,page_post_engagements&period=day&access_token=${fbCreds.token}`;
+        const insightsUrl = `https://graph.facebook.com/v19.0/${fbCreds.id}/insights?metric=page_impressions_unique,page_views_total,page_fan_adds,page_fans&period=day&access_token=${fbCreds.token}`;
         const r = await fetch(insightsUrl);
         const json = await r.json();
 
-        // Fetch posts count for today
-        const today = new Date().toISOString().split("T")[0];
-        const postsUrl = `https://graph.facebook.com/v19.0/${fbCreds.id}/posts?fields=created_time&since=${today}&access_token=${fbCreds.token}`;
-        const postsR = await fetch(postsUrl);
-        const postsJson = await postsR.json();
-        const postsToday = postsJson.data?.length || 0;
-
         if (json.data) {
-          const imp = json.data.find(m => m.name === "page_impressions_unique");
-          const eng = json.data.find(m => m.name === "page_post_engagements");
+          const imp  = json.data.find(m => m.name === "page_impressions_unique");
+          const views = json.data.find(m => m.name === "page_views_total");
+          const newFans = json.data.find(m => m.name === "page_fan_adds");
           const fans = json.data.find(m => m.name === "page_fans");
           const reach = imp?.values?.slice(-1)[0]?.value || 0;
-          const engCount = eng?.values?.slice(-1)[0]?.value || 0;
+          const pageViews = views?.values?.slice(-1)[0]?.value || 0;
+          const newFollowers = newFans?.values?.slice(-1)[0]?.value || 0;
           const followers = fans?.values?.slice(-1)[0]?.value || fbCreds.followers || 0;
-          const engRate = reach > 0 ? parseFloat(((engCount / reach) * 100).toFixed(1)) : 0;
-          const hist = imp?.values?.slice(-6).map(v => v.value) || d.facebook.history;
-          setD(prev => ({ ...prev, facebook: { ...prev.facebook, reach, engagement: engRate, posts: postsToday, history: hist.length >= 6 ? hist : prev.facebook.history } }));
+          // Build 6 day history from API values
+          const rawHist = imp?.values || [];
+          const hist = rawHist.length >= 2
+            ? rawHist.slice(-6).map(v => v.value || 0)
+            : null;
+          setD(prev => ({ ...prev, facebook: { ...prev.facebook, reach, pageViews, newFollowers, history: hist && hist.length >= 2 ? hist : prev.facebook.history } }));
           setFbCreds(prev => ({ ...prev, followers }));
         }
       } catch (e) { console.log("FB error", e); }
@@ -1194,9 +1191,9 @@ export default function App() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {[{ label: "Reach", v: d.facebook.reach, g: d.facebook.reachGoal, color: C.blue, key: "facebook.reach", live: !!fbCreds },
-                { label: "Engagement", v: d.facebook.engagement, g: d.facebook.engGoal, color: C.purple, key: "facebook.engagement", sfx: "%" },
-                { label: "Posts Today", v: d.facebook.posts, g: d.facebook.postsGoal, color: C.gold, key: "facebook.posts" },
-                { label: "Followers", v: fbCreds?.followers || 13000, g: 20000, color: C.green, key: null, live: !!fbCreds }].map(({ label, v, g, color, key, sfx = "", live }) => (
+                { label: "Page Views", v: d.facebook.pageViews || 0, g: 1000, color: C.purple, key: null, live: !!fbCreds },
+                { label: "New Followers", v: d.facebook.newFollowers || 0, g: 50, color: C.gold, key: null, live: !!fbCreds },
+                { label: "Followers", v: fbCreds?.followers || 13515, g: 20000, color: C.green, key: null, live: !!fbCreds }].map(({ label, v, g, color, key, sfx = "", live }) => (
                 <Card key={label} onClick={key ? () => openLog(key, v) : null}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
                     <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>{label}</div>
