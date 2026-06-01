@@ -528,13 +528,13 @@ export default function App() {
     const fetchFB = async () => {
       setFbLoading(true);
       try {
-        const insightsUrl = `https://graph.facebook.com/v19.0/${fbCreds.id}/insights?metric=page_impressions_unique,page_views_total,page_fan_adds,page_fans&period=day&access_token=${fbCreds.token}`;
+        const insightsUrl = `https://graph.facebook.com/v19.0/${fbCreds.id}/insights?metric=page_impressions_unique,page_impressions,page_fan_adds,page_fans&period=day&access_token=${fbCreds.token}`;
         const r = await fetch(insightsUrl);
         const json = await r.json();
 
         if (json.data) {
           const imp  = json.data.find(m => m.name === "page_impressions_unique");
-          const views = json.data.find(m => m.name === "page_views_total");
+          const views = json.data.find(m => m.name === "page_impressions");
           const newFans = json.data.find(m => m.name === "page_fan_adds");
           const fans = json.data.find(m => m.name === "page_fans");
           const reach = imp?.values?.slice(-1)[0]?.value || 0;
@@ -1191,7 +1191,7 @@ export default function App() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {[{ label: "Reach", v: d.facebook.reach, g: d.facebook.reachGoal, color: C.blue, key: "facebook.reach", live: !!fbCreds },
-                { label: "Page Views", v: d.facebook.pageViews || 0, g: 1000, color: C.purple, key: null, live: !!fbCreds },
+                { label: "Impressions", v: d.facebook.pageViews || 0, g: 500000, color: C.purple, key: null, live: !!fbCreds },
                 { label: "New Followers", v: d.facebook.newFollowers || 0, g: 50, color: C.gold, key: null, live: !!fbCreds },
                 { label: "Followers", v: fbCreds?.followers || 13515, g: 20000, color: C.green, key: null, live: !!fbCreds }].map(({ label, v, g, color, key, sfx = "", live }) => (
                 <Card key={label} onClick={key ? () => openLog(key, v) : null}>
